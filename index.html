@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EthioShield-ML | AI Cybersecurity System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+        
+        :root {
+            --cyber-green: #00ff41;
+            --cyber-red: #ff0040;
+            --cyber-blue: #00d8ff;
+            --cyber-purple: #b000ff;
+            --cyber-yellow: #ffff00;
+            --dark-bg: #0a0a0f;
+            --panel-bg: rgba(10, 10, 20, 0.95);
+            --glow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: var(--dark-bg);
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyber-green), transparent);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.95) !important;
+            border-bottom: 2px solid var(--cyber-green);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--glow);
+        }
+        
+        .navbar-brand {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--cyber-green), var(--cyber-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent !important;
+            animation: borderPulse 2s infinite;
+        }
+        
+        @keyframes borderPulse {
+            0%, 100% { text-shadow: 0 0 10px rgba(0,255,65,0.5); }
+            50% { text-shadow: 0 0 20px rgba(0,216,255,0.8); }
+        }
+        
+        .hero-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--cyber-green);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
+            backdrop-filter: blur(5px);
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .input-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--cyber-green);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .input-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .input-card:hover::before {
+            left: 100%;
+        }
+        
+        .input-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+            border-color: var(--cyber-blue);
+        }
+        
+        .input-card h5 {
+            color: var(--cyber-green);
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 1rem;
+        }
+        
+        textarea, input[type="file"] {
+            background: rgba(0, 0, 0, 0.9) !important;
+            border: 1px solid var(--cyber-green) !important;
+            color: var(--cyber-green) !important;
+            font-family: 'Share Tech Mono', monospace !important;
+        }
+        
+        textarea:focus, input:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5) !important;
+            border-color: var(--cyber-blue) !important;
+        }
+        
+        .btn-analyze {
+            background: linear-gradient(135deg, var(--cyber-green), var(--cyber-blue));
+            border: none;
+            color: #000;
+            padding: 12px 40px;
+            font-weight: bold;
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-analyze::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-analyze:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-analyze:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.8);
+        }
+        
+        .result-card {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--cyber-green);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .confidence-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0 auto;
+            background: linear-gradient(135deg, var(--cyber-green), var(--cyber-blue));
+            color: #000;
+            font-family: 'Orbitron', monospace;
+            animation: pulse 2s infinite;
+            position: relative;
+        }
+        
+        .confidence-circle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cyber-green), var(--cyber-blue));
+            opacity: 0.5;
+            z-index: -1;
+            animation: rotate 2s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .scam-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            font-family: 'Orbitron', monospace;
+            animation: glow 1.5s infinite;
+        }
+        
+        .scam-badge.danger {
+            background: var(--cyber-red);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 64, 0.5);
+        }
+        
+        .scam-badge.success {
+            background: var(--cyber-green);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+        }
+        
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+        
+        .explanation-item {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: rgba(0, 255, 65, 0.1);
+            border-left: 4px solid var(--cyber-green);
+            border-radius: 8px;
+            color: var(--cyber-green);
+            transition: all 0.3s;
+        }
+        
+        .explanation-item:hover {
+            background: rgba(0, 255, 65, 0.2);
+            transform: translateX(10px);
+        }
+        
+        .url-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            margin: 0.25rem;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-family: monospace;
+            transition: all 0.3s;
+        }
+        
+        .url-badge.suspicious {
+            background: rgba(255, 0, 64, 0.2);
+            color: var(--cyber-red);
+            border: 1px solid var(--cyber-red);
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: var(--cyber-green) !important;
+        }
+        
+        .badge {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+        }
+        
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--cyber-green);
+            margin-right: 8px;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        h1, h5 {
+            color: var(--cyber-green) !important;
+        }
+        
+        .text-muted {
+            color: rgba(0, 255, 65, 0.7) !important;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            background: #000;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--cyber-green);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scan-line"></div>
+    <canvas id="binaryCanvas"></canvas>
+    
+    <nav class="navbar navbar-dark fixed-top">
+        <div class="container">
+            <span class="navbar-brand h1 mb-0">
+                <i class="fas fa-shield-alt"></i> EthioShield-ML
+            </span>
+            <div class="text-light">
+                <span class="status-dot"></span>
+                <i class="fas fa-robot"></i> ACTIVE | LSTM Neural Network
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container" style="margin-top: 80px;">
+        <div class="hero-section">
+            <div class="text-center mb-4">
+                <h1><i class="fas fa-brain"></i> AI SCAM DETECTION SYSTEM</h1>
+                <p class="text-muted">Deep Learning | Real-time Threat Intelligence | OCR Integration</p>
+                <div>
+                    <div class="badge bg-primary">ENGLISH + AMHARIC</div>
+                    <div class="badge bg-info">LSTM NEURAL NET</div>
+                    <div class="badge bg-success">OCR SUPPORT</div>
+                    <div class="badge bg-warning text-dark">95% ACCURACY</div>
+                </div>
+            </div>
+            
+            <div class="input-card">
+                <h5><i class="fas fa-comment-dots"></i> TEXT ANALYSIS</h5>
+                <textarea id="textInput" class="form-control" rows="5" placeholder=">_ Paste suspicious message here for analysis..."></textarea>
+                <small class="text-muted mt-2"> Supports English & Amharic text detection</small>
+            </div>
+            
+            <div class="input-card">
+                <h5><i class="fas fa-image"></i> IMAGE OCR ANALYSIS</h5>
+                <input type="file" id="imageInput" class="form-control" accept="image/*">
+                <small class="text-muted mt-2"> Upload screenshot - OCR will extract and analyze text</small>
+            </div>
+            
+            <div class="text-center">
+                <button class="btn btn-analyze" onclick="analyze()">
+                    <i class="fas fa-shield-virus"></i> EXECUTE THREAT SCAN
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-2 text-muted">>_ Neural network analyzing patterns...</p>
+                <p class="small text-muted">[Scanning threats | Checking URLs | OCR processing]</p>
+            </div>
+            
+            <div id="results" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Binary Rain Animation
+        const canvas = document.getElementById('binaryCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const chars = '01';
+        const charArray = chars.split('');
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+        
+        for (let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+        
+        function drawBinary() {
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ff41';
+            ctx.font = fontSize + 'px monospace';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = charArray[Math.floor(Math.random() * charArray.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawBinary, 35);
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        async function analyze() {
+            const textInput = document.getElementById('textInput').value;
+            const imageInput = document.getElementById('imageInput').files[0];
+            
+            if (!textInput && !imageInput) {
+                alert('[ERROR] Please enter text or upload an image for analysis');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            const formData = new FormData();
+            if (textInput) formData.append('text', textInput);
+            if (imageInput) formData.append('image', imageInput);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('[ERROR] Analysis failed. Please check server connection.');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            const isScam = data.result === 'SCAM';
+            
+            let html = `
+                <div class="result-card">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="confidence-circle">
+                                ${data.confidence}%
+                            </div>
+                            <div class="mt-3">
+                                <span class="scam-badge ${isScam ? 'danger' : 'success'}">
+                                    <i class="fas ${isScam ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i>
+                                    [${data.result}]
+                                </span>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">Confidence Score | Neural Net Output</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <h5><i class="fas fa-chart-line"></i> THREAT ANALYSIS REPORT</h5>
+                            
+                            <div class="mt-3">
+                                <strong><i class="fas fa-key"></i> SUSPICIOUS KEYWORDS:</strong><br>
+                                ${data.suspicious_keywords && data.suspicious_keywords.length > 0 ? 
+                                    data.suspicious_keywords.map(k => `<span class="badge bg-warning text-dark mt-1">⚠️ ${k}</span>`).join('') : 
+                                    '<span class="text-muted">✓ No suspicious patterns detected</span>'
+                                }
+                            </div>
+                            
+                            ${data.urls_detected && data.urls_detected.length > 0 ? `
+                            <div class="mt-3">
+                                <strong><i class="fas fa-link"></i> URL FORENSICS:</strong>
+                                <div class="mt-2">
+                                    ${data.urls_detected.map(url => `
+                                        <div class="url-badge ${data.url_analysis && data.url_analysis.find(u => u.url === url)?.is_suspicious ? 'suspicious' : ''}">
+                                            🔗 ${url}
+                                            ${data.url_analysis && data.url_analysis.find(u => u.url === url)?.is_suspicious ? 
+                                                '<i class="fas fa-skull-crosswalk text-danger"></i> [PHISHING]' : 
+                                                '<i class="fas fa-check-circle text-success"></i> [SAFE]'
+                                            }
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : '<div class="mt-3"><span class="text-muted">✓ No URLs detected</span></div>'}
+                            
+                            <div class="mt-3">
+                                <strong><i class="fas fa-lightbulb"></i> AI EXPLANATION:</strong>
+                                ${data.explanation.map(reason => `
+                                    <div class="explanation-item">
+                                        <i class="fas fa-terminal"></i> ${reason}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            ${data.processed_text ? `
+                            <div class="mt-3">
+                                <strong><i class="fas fa-ocr"></i> OCR EXTRACTED TEXT:</strong>
+                                <div class="alert alert-dark mt-2" style="background: rgba(0,255,65,0.1); border: 1px solid #00ff41;">
+                                    <code>"${data.processed_text.substring(0, 200)}${data.processed_text.length > 200 ? '...' : ''}"</code>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="mt-3 text-muted small">
+                                <hr style="border-color: #00ff41;">
+                                <i class="fas fa-microchip"></i> Powered by LSTM Neural Network | TensorFlow 2.13
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        document.getElementById('textInput').addEventListener('keypress', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                analyze();
+            }
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
