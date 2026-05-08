@@ -114,7 +114,7 @@ def generate_explanation(text, scam_result, url_analysis, amharic_matches):
     # Suspicious keywords
     if scam_result['suspicious_words']:
         keywords = ', '.join(scam_result['suspicious_words'][:5])
-        reasons.append(f"📝 Contains known scam keywords: {keywords}")
+        reasons.append(f" Contains known scam keywords: {keywords}")
     
     # Amharic keywords
     if amharic_matches:
@@ -133,11 +133,11 @@ def generate_explanation(text, scam_result, url_analysis, amharic_matches):
     # Sensitive information requests
     sensitive_patterns = ['password', 'credit card', 'ssn', 'pin', 'verify account', 'bank details']
     if any(pattern in text.lower() for pattern in sensitive_patterns):
-        reasons.append("🔐 Requests sensitive personal information (never share this data)")
+        reasons.append(" Requests sensitive personal information (never share this data)")
     
     # Grammar/spelling patterns
     if len(text.split()) > 10 and scam_result['confidence'] > 70:
-        reasons.append("📊 Text patterns match known scam message characteristics")
+        reasons.append(" Text patterns match known scam message characteristics")
     
     if not reasons:
         reasons.append("✅ No scam indicators detected - message appears safe")
