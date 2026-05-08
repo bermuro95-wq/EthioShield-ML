@@ -181,10 +181,10 @@ def train_lstm_model():
     with open('models/label_encoder.pkl', 'wb') as f:
         pickle.dump(label_encoder, f)
     
-    print("\n✅ Model and artifacts saved to 'models/' directory")
+    print("\n Model and artifacts saved to 'models/' directory")
     
     # Test predictions
-    print("\n📝 Testing sample predictions:")
+    print("\n Testing sample predictions:")
     test_samples = [
         "URGENT: Your account has been suspended! Click here to verify",
         "Hey, want to grab coffee tomorrow?",
