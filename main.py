@@ -1,151 +1,148 @@
-import os
-import re
-import logging
-from flask import Blueprint, request, jsonify, render_template
-from werkzeug.utils import secure_filename
-from app.models.scam_detector import ScamDetector
-from app.models.phishing_detector import PhishingDetector
-from app.utils.ocr_processor import OCRProcessor
+import os 
+import re 
+import logging 
+from flask import Blueprint, request, jsonify, render_template 
+from werkzeug.utils import secure_filename 
+from app.models.scam_detector import ScamDetector 
+from app.models.phishing_detector import PhishingDetector 
+from app.utils.ocr_processor import OCRProcessor 
 
-# Create blueprint
-bp = Blueprint('main', __name__)
+# Create blueprint 
+bp = Blueprint('main', __name__) 
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Setup professional logging 
+logging.basicConfig(level=logging.INFO) 
+logger = logging.getLogger(__name__) 
 
-# Initialize components
-scam_detector = ScamDetector()
-phishing_detector = PhishingDetector()
-ocr_processor = OCRProcessor()
+# Ensure uploads directory exists for OCR processing
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
-# Amharic scam keywords
-AMHARIC_KEYWORDS = {
-    'urgent': ['አስቸኳይ', 'በፍጥነት'],
-    'verify': ['አረጋግጥ', 'ማረጋገጫ'],
-    'account': ['አካውንት', 'መለያ'],
-    'bank': ['ባንክ', 'ባንክዎ'],
-    'winner': ['አሸናፊ', 'ሽልማት'],
-    'password': ['የይለፍ ቃል', 'ፓስወርድ']
-}
+# Initialize AI/ML components 
+scam_detector = ScamDetector() 
+phishing_detector = PhishingDetector() 
+ocr_processor = OCRProcessor() 
 
-@bp.route('/')
-def index():
-    return render_template('index.html')
+# ENHANCED: Localized Ethiopian scam keywords
+AMHARIC_KEYWORDS = { 
+    'urgent': ['አስቸኳይ', 'በፍጥነት', 'አሁኑኑ'], 
+    'verify': ['አረጋግጥ', 'ማረጋገጫ', 'ሊንኩን'], 
+    'account': ['አካውንት', 'መለያ', 'ዝግ'], 
+    'bank': ['ባንክ', 'ባንክዎ', 'ሲቢኢ', 'ንግድ ባንክ'], 
+    'winner': ['አሸናፊ', 'ሽልማት', 'እድለኛ', 'ሎተሪ'], 
+    'password': ['የይለፍ ቃል', 'ፓስወርድ', 'ሚስጥር'],
+    'telebirr': ['ቴሌብር', 'ብር', 'ተልኮለታል']
+} 
 
-@bp.route('/predict', methods=['POST'])
-def predict():
+@bp.route('/') 
+def index(): 
+    return render_template('index.html') 
+
+@bp.route('/predict', methods=['POST']) 
+def predict(): 
+    try: 
+        text_input = request.form.get('text', '') 
+        image_file = request.files.get('image') 
+         
+        extracted_text = "" 
+         
+        # 1. OCR PROCESSING (IMAGE TO TEXT)
+        if image_file and image_file.filename: 
+            filename = secure_filename(image_file.filename) 
+            filepath = os.path.join(UPLOAD_FOLDER, filename) 
+            image_file.save(filepath) 
+             
+            # Extract text from image (e.g., screenshot of a scam SMS)
+            extracted_text = ocr_processor.extract_text(filepath) 
+            logger.info(f"EthioShield OCR Processed: {extracted_text[:100]}") 
+             
+            # Clean up immediately for privacy/security 
+            if os.path.exists(filepath):
+                os.remove(filepath) 
+         
+        # Combine text inputs for total analysis
+        full_text = f"{text_input} {extracted_text}".strip()
+         
+        if not full_text: 
+            return jsonify({'error': 'No input detected. Please provide text or an image.'}), 400 
+         
+        # 2. PHISHING & URL ANALYSIS 
+        urls_detected = phishing_detector.extract_urls(full_text) 
+        url_analysis = [phishing_detector.analyze_url(url) for url in urls_detected] 
+         
+        # 3. MACHINE LEARNING PREDICTION
+        scam_result = scam_detector.predict(full_text) 
+         
+        # 4. AMHARIC HEURISTIC CHECK
+        amharic_matches = [] 
+        for category, keywords in AMHARIC_KEYWORDS.items(): 
+            for keyword in keywords: 
+                if keyword in full_text: 
+                    amharic_matches.append(keyword) 
+         
+        # Merge all suspicious indicators
+        all_suspicious = list(set(scam_result.get('suspicious_words', []) + amharic_matches)) 
+         
+        # 5. GENERATE HUMAN-READABLE EXPLANATION 
+        explanation = generate_explanation(full_text, scam_result, url_analysis, amharic_matches) 
+         
+        # INSA-READY RESPONSE SCHEMA
+        response = { 
+            'result': 'SCAM' if (scam_result['is_scam'] or any(u['is_suspicious'] for u in url_analysis)) else 'SAFE', 
+            'confidence': scam_result['confidence'], 
+            'threat_count': len(all_suspicious),
+            'urls_detected': urls_detected, 
+            'url_analysis': url_analysis, 
+            'suspicious_keywords': all_suspicious[:10], 
+            'explanation': explanation, 
+            'metadata': {
+                'ocr_executed': bool(extracted_text),
+                'language': 'Amharic/English Mixed'
+            }
+        } 
+         
+        return jsonify(response) 
+         
+    except Exception as e: 
+        logger.error(f"EthioShield System Error: {str(e)}") 
+        return jsonify({'error': 'System encountered an error during analysis.'}), 500 
+
+def generate_explanation(text, scam_result, url_analysis, amharic_matches): 
+    """Creates a professional security report for the end-user""" 
+    reasons = [] 
+     
+    # Risk Leveling
+    if scam_result['confidence'] > 85: 
+        reasons.append(f"🛑 CRITICAL: AI identified extreme scam patterns ({scam_result['confidence']:.0f}% confidence).") 
+    elif scam_result['confidence'] > 50: 
+        reasons.append(f"⚠️ WARNING: Moderate scam indicators detected by Neural Network.") 
+     
+    # Amharic detection
+    if amharic_matches: 
+        reasons.append(f"🇪🇹 Localized Scam detected: Found suspicious Amharic terms: {', '.join(amharic_matches[:3])}") 
+     
+    # Urgency and Pressure Tactics
+    urgency_words = ['urgent', 'immediately', 'today', 'now', 'አሁኑኑ', 'አስቸኳይ'] 
+    if any(word in text.lower() for word in urgency_words): 
+        reasons.append("⏰ Pressure Tactic: Message uses urgency to force a fast, emotional decision.") 
+     
+    # URL Safety
+    for url_info in url_analysis: 
+        if url_info['is_suspicious']: 
+            reasons.append(f"🔗 Malicious Link: {url_info['reason']}") 
+     
+    # Sensitive Data Requests 
+    if any(p in text.lower() for p in ['password', 'pin', 'otp', 'cbe', 'telebirr']): 
+        reasons.append("🚨 Data Theft: Message attempts to solicit banking or login credentials.") 
+     
+    return reasons if reasons else ["✅ Analysis complete: No known threats detected."]
+
+if __name__ == '__main__': 
+    # Use create_app pattern for professional Flask deployment
     try:
-        text_input = request.form.get('text', '')
-        image_file = request.files.get('image')
-        
-        extracted_text = ""
-        
-        # Process image if uploaded
-        if image_file and image_file.filename:
-            filename = secure_filename(image_file.filename)
-            filepath = os.path.join('uploads', filename)
-            image_file.save(filepath)
-            
-            # Extract text from image
-            extracted_text = ocr_processor.extract_text(filepath)
-            logger.info(f"OCR extracted: {extracted_text[:100]}")
-            
-            # Clean up
-            os.remove(filepath)
-        
-        # Combine text inputs
-        full_text = text_input + " " + extracted_text if extracted_text else text_input
-        
-        if not full_text.strip():
-            return jsonify({'error': 'No text or image provided'}), 400
-        
-        # Extract and analyze URLs
-        urls_detected = phishing_detector.extract_urls(full_text)
-        url_analysis = []
-        for url in urls_detected:
-            analysis = phishing_detector.analyze_url(url)
-            url_analysis.append(analysis)
-        
-        # Detect scam using ML
-        scam_result = scam_detector.predict(full_text)
-        
-        # Check for Amharic keywords
-        amharic_matches = []
-        for category, keywords in AMHARIC_KEYWORDS.items():
-            for keyword in keywords:
-                if keyword in full_text:
-                    amharic_matches.append(keyword)
-        
-        # Combine suspicious keywords
-        all_suspicious = list(set(scam_result['suspicious_words'] + amharic_matches))
-        
-        # Generate explanation
-        explanation = generate_explanation(full_text, scam_result, url_analysis, amharic_matches)
-        
-        response = {
-            'result': 'SCAM' if scam_result['is_scam'] else 'SAFE',
-            'confidence': scam_result['confidence'],
-            'urls_detected': urls_detected,
-            'url_analysis': url_analysis,
-            'suspicious_keywords': all_suspicious[:10],
-            'explanation': explanation,
-            'processed_text': extracted_text if extracted_text else None
-        }
-        
-        return jsonify(response)
-        
-    except Exception as e:
-        logger.error(f"Prediction error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-def generate_explanation(text, scam_result, url_analysis, amharic_matches):
-    """Generate detailed human-readable explanation"""
-    reasons = []
-    
-    # ML confidence based explanation
-    if scam_result['confidence'] > 80:
-        reasons.append(f"🔴 HIGH RISK: Neural network detected scam patterns with {scam_result['confidence']:.0f}% confidence")
-    elif scam_result['confidence'] > 60:
-        reasons.append(f"⚠️ MEDIUM RISK: ML model identified suspicious patterns ({scam_result['confidence']:.0f}% confidence)")
-    elif scam_result['confidence'] > 30:
-        reasons.append(f"ℹ️ LOW RISK: Some suspicious indicators found ({scam_result['confidence']:.0f}% confidence)")
-    
-    # Suspicious keywords
-    if scam_result['suspicious_words']:
-        keywords = ', '.join(scam_result['suspicious_words'][:5])
-        reasons.append(f" Contains known scam keywords: {keywords}")
-    
-    # Amharic keywords
-    if amharic_matches:
-        reasons.append(f"🇪🇹 Amharic scam indicators detected: {', '.join(amharic_matches)}")
-    
-    # Urgency tactics
-    urgency_words = ['urgent', 'immediately', 'asap', 'now', 'today', '立即']
-    if any(word in text.lower() for word in urgency_words):
-        reasons.append("⏰ Uses urgency tactics to pressure immediate action (common scam technique)")
-    
-    # URL analysis
-    for url_info in url_analysis:
-        if url_info['is_suspicious']:
-            reasons.append(f"🔗 {url_info['reason']}: {url_info['domain']}")
-    
-    # Sensitive information requests
-    sensitive_patterns = ['password', 'credit card', 'ssn', 'pin', 'verify account', 'bank details']
-    if any(pattern in text.lower() for pattern in sensitive_patterns):
-        reasons.append(" Requests sensitive personal information (never share this data)")
-    
-    # Grammar/spelling patterns
-    if len(text.split()) > 10 and scam_result['confidence'] > 70:
-        reasons.append(" Text patterns match known scam message characteristics")
-    
-    if not reasons:
-        reasons.append("✅ No scam indicators detected - message appears safe")
-    
-    return reasons
-
-# For running directly
-if __name__ == '__main__':
-    from app import create_app
-    app = create_app()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        from app import create_app 
+        app = create_app() 
+        app.run(debug=False, host='0.0.0.0', port=5000)
+    except ImportError:
+        print("EthioShield: Running in standalone mode.")
